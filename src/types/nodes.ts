@@ -49,7 +49,7 @@ export type ApprovalNodeData = z.infer<typeof approvalDataSchema>
 export const automatedDataSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   actionId: z.string().min(1, 'Select an action'),
-  params: z.record(z.string(), z.string()),
+  params: z.record(z.string(), z.unknown()),
 })
 export type AutomatedNodeData = z.infer<typeof automatedDataSchema>
 
@@ -100,6 +100,28 @@ export function createDefaultNodeData(type: NodeType): WorkflowNodeData {
       return { endMessage: 'Workflow complete', summary: false }
     default:
       return assertNever(type)
+  }
+}
+
+/**
+ * Live proof that the discriminated union narrows `node.data` from the `type`
+ * discriminator with zero casts. If the generic `Node<Data, Literal>` wiring
+ * ever breaks, this function will stop compiling.
+ */
+export function getNodeDisplayTitle(node: WorkflowNode): string {
+  switch (node.type) {
+    case 'start':
+      return node.data.title
+    case 'task':
+      return node.data.title || 'Untitled task'
+    case 'approval':
+      return node.data.title || 'Untitled approval'
+    case 'automated':
+      return node.data.title || 'Untitled automation'
+    case 'end':
+      return node.data.endMessage
+    default:
+      return assertNever(node)
   }
 }
 
