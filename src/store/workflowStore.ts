@@ -176,8 +176,11 @@ export const useWorkflowStore = create<WorkflowStore>()(
 // selector returns a stable reference when its dependencies haven't changed,
 // which is what lets the form panel skip re-renders on node-drag updates.
 
-export const selectNodes = (state: WorkflowStore): readonly WorkflowNode[] => state.nodes
-export const selectEdges = (state: WorkflowStore): readonly WorkflowEdge[] => state.edges
+// Arrays are typed non-readonly so they pass to xyflow's ReactFlow props
+// without a spread copy. Immer freezes the underlying state, so this is a
+// surface-level ergonomic concession — callers still cannot mutate.
+export const selectNodes = (state: WorkflowStore): WorkflowNode[] => state.nodes
+export const selectEdges = (state: WorkflowStore): WorkflowEdge[] => state.edges
 export const selectSelectedNodeId = (state: WorkflowStore): string | null => state.selectedNodeId
 export const selectVersion = (state: WorkflowStore): number => state.version
 

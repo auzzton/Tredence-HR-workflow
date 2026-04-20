@@ -1,17 +1,25 @@
 import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow } from '@xyflow/react'
+import { useCanvasAdapter } from './useCanvasAdapter'
 
 /**
- * Canvas shell. Renders an empty ReactFlow surface with the dotted grid,
- * minimap, and controls. The store↔xyflow adapter, node types, and drop
- * handler are wired in later commits so this shell stays independently
- * reviewable.
+ * Canvas surface. All xyflow change handling lives behind `useCanvasAdapter`
+ * so this component never touches applyNodeChanges / applyEdgeChanges
+ * directly. Node types and the sidebar drop handler arrive in follow-up
+ * commits.
  */
 export function WorkflowCanvas() {
+  const adapter = useCanvasAdapter()
   return (
     <div className="h-full w-full">
       <ReactFlow
-        nodes={[]}
-        edges={[]}
+        nodes={adapter.nodes}
+        edges={adapter.edges}
+        onNodesChange={adapter.onNodesChange}
+        onEdgesChange={adapter.onEdgesChange}
+        onConnect={adapter.onConnect}
+        onNodeClick={adapter.onNodeClick}
+        onPaneClick={adapter.onPaneClick}
+        deleteKeyCode={['Delete', 'Backspace']}
         proOptions={{ hideAttribution: true }}
         fitView
       >
