@@ -1,14 +1,17 @@
+import { ReactFlowProvider } from '@xyflow/react'
+import { WorkflowCanvas } from '@/components/canvas/WorkflowCanvas'
+
 export default function App() {
   return (
-    <div className="flex h-full items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-2xl font-semibold text-[var(--color-text-primary)]">
-          HR Workflow Designer
-        </h1>
-        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-          Scaffold ready. Canvas coming next.
-        </p>
+    <ReactFlowProvider>
+      <div className="flex h-full w-full">
+        <aside className="h-full w-60 shrink-0 border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)]">
+          {/* Sidebar goes here (next commit) */}
+        </aside>
+        <main className="h-full flex-1">
+          <WorkflowCanvas />
+        </main>
       </div>
-    </div>
+    </ReactFlowProvider>
   )
 }
