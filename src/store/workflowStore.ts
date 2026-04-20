@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { subscribeWithSelector } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'
 import type { NodeType, WorkflowNode, WorkflowNodeData } from '@/types/nodes'
+import { nodeDataSchemaFor } from '@/types/nodes'
 import type { WorkflowEdge, WorkflowGraph } from '@/types/workflow'
 import { createNode, type NodePosition } from '@/lib/nodeFactory'
 
@@ -16,6 +17,10 @@ type WorkflowState = {
   nodes: WorkflowNode[]
   edges: WorkflowEdge[]
   selectedNodeId: string | null
+  // Monotonic counter bumped on every graph mutation (nodes/edges). Exists so
+  // validation and simulation results can be cache-keyed against graph state
+  // without deep-equality checks. Selection changes do NOT bump it.
+  version: number
 }
 
 type WorkflowActions = {
@@ -38,6 +43,7 @@ const initialState: WorkflowState = {
   nodes: [],
   edges: [],
   selectedNodeId: null,
+  version: 0,
 }
 
 export const useWorkflowStore = create<WorkflowStore>()(
@@ -49,6 +55,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
         const node = createNode(type, position)
         set((state) => {
           state.nodes.push(node)
+          state.version++
         })
         return node.id
       },
@@ -57,10 +64,17 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set((state) => {
           const node = state.nodes.find((n) => n.id === id)
           if (!node) return
+          // Dev-only guard: verify the incoming shape matches the stored node's
+          // type via the per-type zod schema. Throws loudly in dev on boundary
+          // violations; tree-shaken in prod so the hot path stays a plain write.
+          if (import.meta.env.DEV) {
+            nodeDataSchemaFor[node.type].parse(data)
+          }
           // The form layer enforces per-type correctness (each node type has its
-          // own zod schema wired via RHF), so at this store boundary the shape
-          // is trusted to match `node.type`. This is the ONE intentional cast.
+          // own zod schema wired via RHF) and the dev guard above double-checks
+          // the boundary. This is the ONE intentional cast in the codebase.
           node.data = data as typeof node.data
+          state.version++
         })
       },
 
@@ -69,6 +83,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           state.nodes = state.nodes.filter((n) => n.id !== id)
           state.edges = state.edges.filter((e) => e.source !== id && e.target !== id)
           if (state.selectedNodeId === id) state.selectedNodeId = null
+          state.version++
         })
       },
 
@@ -83,6 +98,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           ...(connection.sourceHandle != null ? { sourceHandle: connection.sourceHandle } : {}),
           ...(connection.targetHandle != null ? { targetHandle: connection.targetHandle } : {}),
         }
+        let added = false
         set((state) => {
           const exists = state.edges.some(
             (e) =>
@@ -91,14 +107,20 @@ export const useWorkflowStore = create<WorkflowStore>()(
               (e.sourceHandle ?? null) === (edge.sourceHandle ?? null) &&
               (e.targetHandle ?? null) === (edge.targetHandle ?? null),
           )
-          if (!exists) state.edges.push(edge)
+          if (!exists) {
+            state.edges.push(edge)
+            state.version++
+            added = true
+          }
         })
-        return id
+        return added ? id : null
       },
 
       removeEdge: (id) => {
         set((state) => {
+          const before = state.edges.length
           state.edges = state.edges.filter((e) => e.id !== id)
+          if (state.edges.length !== before) state.version++
         })
       },
 
@@ -119,6 +141,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
           state.nodes = graph.nodes
           state.edges = graph.edges
           state.selectedNodeId = null
+          state.version++
         })
       },
 
@@ -127,18 +150,21 @@ export const useWorkflowStore = create<WorkflowStore>()(
           state.nodes = []
           state.edges = []
           state.selectedNodeId = null
+          state.version++
         })
       },
 
       setNodes: (nodes) => {
         set((state) => {
           state.nodes = nodes
+          state.version++
         })
       },
 
       setEdges: (edges) => {
         set((state) => {
           state.edges = edges
+          state.version++
         })
       },
     })),
@@ -153,6 +179,7 @@ export const useWorkflowStore = create<WorkflowStore>()(
 export const selectNodes = (state: WorkflowStore): readonly WorkflowNode[] => state.nodes
 export const selectEdges = (state: WorkflowStore): readonly WorkflowEdge[] => state.edges
 export const selectSelectedNodeId = (state: WorkflowStore): string | null => state.selectedNodeId
+export const selectVersion = (state: WorkflowStore): number => state.version
 
 export const selectSelectedNode = (state: WorkflowStore): WorkflowNode | null => {
   const { selectedNodeId, nodes } = state
