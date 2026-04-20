@@ -9,6 +9,7 @@ import {
   useReactFlow,
 } from '@xyflow/react'
 import { NODE_TYPES, type NodeType } from '@/types/nodes'
+import { nodeTypes } from '@/components/nodes/nodeTypes'
 import { useWorkflowStore } from '@/store/workflowStore'
 import { useCanvasAdapter } from './useCanvasAdapter'
 import { NODE_DRAG_MIME } from './Sidebar'
@@ -48,6 +49,7 @@ export function WorkflowCanvas() {
       <ReactFlow
         nodes={adapter.nodes}
         edges={adapter.edges}
+        nodeTypes={nodeTypes}
         onNodesChange={adapter.onNodesChange}
         onEdgesChange={adapter.onEdgesChange}
         onConnect={adapter.onConnect}

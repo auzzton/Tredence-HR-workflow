@@ -18,6 +18,12 @@
   --color-warning: #d97706;
   --color-danger: #dc2626;
 
+  --color-node-start: #16a34a;
+  --color-node-task: #4f46e5;
+  --color-node-approval: #d97706;
+  --color-node-automated: #a855f7;
+  --color-node-end: #6b7280;
+
   --radius-node: 0.625rem;
 }
 
