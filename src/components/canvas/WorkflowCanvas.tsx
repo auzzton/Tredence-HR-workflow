@@ -1,16 +1,50 @@
-import { Background, BackgroundVariant, Controls, MiniMap, ReactFlow } from '@xyflow/react'
+import type { DragEvent } from 'react'
+import { useCallback } from 'react'
+import {
+  Background,
+  BackgroundVariant,
+  Controls,
+  MiniMap,
+  ReactFlow,
+  useReactFlow,
+} from '@xyflow/react'
+import { NODE_TYPES, type NodeType } from '@/types/nodes'
+import { useWorkflowStore } from '@/store/workflowStore'
 import { useCanvasAdapter } from './useCanvasAdapter'
+import { NODE_DRAG_MIME } from './Sidebar'
+
+function isNodeType(value: string): value is NodeType {
+  return (NODE_TYPES as readonly string[]).includes(value)
+}
 
 /**
  * Canvas surface. All xyflow change handling lives behind `useCanvasAdapter`
  * so this component never touches applyNodeChanges / applyEdgeChanges
- * directly. Node types and the sidebar drop handler arrive in follow-up
- * commits.
+ * directly. Drop handling translates sidebar-originated drags into
+ * store.addNode via screenToFlowPosition.
  */
 export function WorkflowCanvas() {
   const adapter = useCanvasAdapter()
+  const { screenToFlowPosition } = useReactFlow()
+
+  const onDragOver = useCallback((event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+  }, [])
+
+  const onDrop = useCallback(
+    (event: DragEvent<HTMLDivElement>) => {
+      event.preventDefault()
+      const raw = event.dataTransfer.getData(NODE_DRAG_MIME)
+      if (!isNodeType(raw)) return
+      const position = screenToFlowPosition({ x: event.clientX, y: event.clientY })
+      useWorkflowStore.getState().addNode(raw, position)
+    },
+    [screenToFlowPosition],
+  )
+
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow
         nodes={adapter.nodes}
         edges={adapter.edges}
