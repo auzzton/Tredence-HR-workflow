@@ -64,11 +64,19 @@ export const useWorkflowStore = create<WorkflowStore>()(
         set((state) => {
           const node = state.nodes.find((n) => n.id === id)
           if (!node) return
-          // Dev-only guard: verify the incoming shape matches the stored node's
-          // type via the per-type zod schema. Throws loudly in dev on boundary
-          // violations; tree-shaken in prod so the hot path stays a plain write.
+          // Dev-only guard: warn when the incoming data has structural type
+          // mismatches (e.g. wrong field types or missing keys). Uses safeParse
+          // so it never throws — UX validation failures like empty required
+          // fields are intentional intermediate states during editing and must
+          // not break the store write. Tree-shaken in prod.
           if (import.meta.env.DEV) {
-            nodeDataSchemaFor[node.type].parse(data)
+            const result = nodeDataSchemaFor[node.type].safeParse(data)
+            if (!result.success) {
+              console.warn(
+                `[dev] updateNodeData: "${node.type}" data has issues (ok during editing, investigate if types are wrong)`,
+                result.error.format(),
+              )
+            }
           }
           // The form layer enforces per-type correctness (each node type has its
           // own zod schema wired via RHF) and the dev guard above double-checks
