@@ -27,6 +27,7 @@ export function AutomatedNodeForm({ id, data }: Props) {
     register,
     watch,
     setValue,
+    getValues,
     formState: { errors },
   } = useForm<AutomatedNodeData>({
     resolver: zodResolver(automatedDataSchema),
@@ -63,7 +64,18 @@ export function AutomatedNodeForm({ id, data }: Props) {
         placeholder="Select action"
         error={errors.actionId?.message}
         {...register('actionId', {
-          onChange: () => setValue('params', {}),
+          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+            const newActionId = e.target.value
+            setValue('params', {})
+            // Cancel any in-flight debounced write, then flush synchronously so the
+            // store is clean before the new action's param inputs mount.
+            writeback.cancel()
+            useWorkflowStore.getState().updateNodeData(id, {
+              title: getValues('title'),
+              actionId: newActionId,
+              params: {},
+            })
+          },
         })}
       />
       {currentAction?.params.map((param) => (

@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
+
+export type DebouncedCallback<A extends unknown[]> = {
+  (...args: A): void
+  /** Cancel any pending invocation. Call before a synchronous store flush
+   *  to prevent a stale in-flight write from overwriting the flush result. */
+  cancel(): void
+}
 
 /**
  * Returns a stable-identity callback that delays invocation of `fn` until
@@ -16,7 +23,7 @@ import { useCallback, useEffect, useRef } from 'react'
 export function useDebouncedCallback<A extends unknown[]>(
   fn: (...args: A) => void,
   delay: number,
-): (...args: A) => void {
+): DebouncedCallback<A> {
   const fnRef = useRef(fn)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -30,13 +37,19 @@ export function useDebouncedCallback<A extends unknown[]>(
     }
   }, [])
 
-  return useCallback(
-    (...args: A) => {
+  const cancel = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }, [])
+
+  return useMemo(() => {
+    function debounced(...args: A) {
       if (timerRef.current) clearTimeout(timerRef.current)
-      timerRef.current = setTimeout(() => {
-        fnRef.current(...args)
-      }, delay)
-    },
-    [delay],
-  )
+      timerRef.current = setTimeout(() => fnRef.current(...args), delay)
+    }
+    debounced.cancel = cancel
+    return debounced
+  }, [delay, cancel])
 }
