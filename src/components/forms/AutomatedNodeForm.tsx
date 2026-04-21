@@ -1,21 +1,13 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { Path } from 'react-hook-form'
 import { automatedDataSchema, type AutomatedNodeData } from '@/types/nodes'
+import type { AutomationAction } from '@/types/workflow'
 import { useWorkflowStore } from '@/store/workflowStore'
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
+import { apiGet } from '@/api/client'
 import { SelectField, TextField } from './fields'
-
-// TODO-STEP-7: swap for fetch('/automations')
-const STUB_ACTIONS = [
-  { id: 'send_email', label: 'Send Email', params: ['to', 'subject'] },
-  { id: 'generate_doc', label: 'Generate Document', params: ['template', 'recipient'] },
-  { id: 'notify_slack', label: 'Notify Slack', params: ['channel', 'message'] },
-  { id: 'create_ticket', label: 'Create Ticket', params: ['project', 'summary'] },
-] as const
-
-type StubAction = (typeof STUB_ACTIONS)[number]
 
 type Props = {
   id: string
@@ -23,6 +15,23 @@ type Props = {
 }
 
 export function AutomatedNodeForm({ id, data }: Props) {
+  const [actions, setActions] = useState<AutomationAction[]>([])
+  const [fetchStatus, setFetchStatus] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  useEffect(() => {
+    const controller = new AbortController()
+    apiGet<AutomationAction[]>('/automations', controller.signal)
+      .then((result) => {
+        setActions(result)
+        setFetchStatus('ready')
+      })
+      .catch((err: unknown) => {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setFetchStatus('error')
+      })
+    return () => controller.abort()
+  }, [])
+
   const {
     register,
     watch,
@@ -48,7 +57,7 @@ export function AutomatedNodeForm({ id, data }: Props) {
   }, [watch, writeback])
 
   const actionId = watch('actionId')
-  const currentAction: StubAction | undefined = STUB_ACTIONS.find((a) => a.id === actionId)
+  const currentAction: AutomationAction | undefined = actions.find((a) => a.id === actionId)
 
   return (
     <form className="flex flex-col gap-3" onSubmit={(e) => e.preventDefault()}>
@@ -58,26 +67,32 @@ export function AutomatedNodeForm({ id, data }: Props) {
         error={errors.title?.message}
         {...register('title')}
       />
-      <SelectField
-        label="Action"
-        options={STUB_ACTIONS.map((a) => ({ value: a.id, label: a.label }))}
-        placeholder="Select action"
-        error={errors.actionId?.message}
-        {...register('actionId', {
-          onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const newActionId = e.target.value
-            setValue('params', {})
-            // Cancel any in-flight debounced write, then flush synchronously so the
-            // store is clean before the new action's param inputs mount.
-            writeback.cancel()
-            useWorkflowStore.getState().updateNodeData(id, {
-              title: getValues('title'),
-              actionId: newActionId,
-              params: {},
-            })
-          },
-        })}
-      />
+      {fetchStatus === 'loading' && (
+        <p className="text-xs text-[var(--color-text-muted)]">Loading actions…</p>
+      )}
+      {fetchStatus === 'error' && (
+        <p className="text-xs text-[var(--color-danger)]">Failed to load actions.</p>
+      )}
+      {fetchStatus === 'ready' && (
+        <SelectField
+          label="Action"
+          options={actions.map((a) => ({ value: a.id, label: a.label }))}
+          placeholder="Select action"
+          error={errors.actionId?.message}
+          {...register('actionId', {
+            onChange: (e: React.ChangeEvent<HTMLSelectElement>) => {
+              const newActionId = e.target.value
+              setValue('params', {})
+              writeback.cancel()
+              useWorkflowStore.getState().updateNodeData(id, {
+                title: getValues('title'),
+                actionId: newActionId,
+                params: {},
+              })
+            },
+          })}
+        />
+      )}
       {currentAction?.params.map((param) => (
         <TextField
           key={param}

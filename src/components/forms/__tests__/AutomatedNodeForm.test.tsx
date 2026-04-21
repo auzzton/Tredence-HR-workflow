@@ -1,15 +1,29 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+// globals (describe/it/expect/vi/beforeEach/afterEach) injected by vitest — no explicit import needed
 import { AutomatedNodeForm } from '../AutomatedNodeForm'
 import { useWorkflowStore } from '@/store/workflowStore'
 import type { AutomatedNodeData } from '@/types/nodes'
 
+const MOCK_ACTIONS = [
+  { id: 'send_email', label: 'Send Email', params: ['to', 'subject'] },
+  { id: 'generate_doc', label: 'Generate Document', params: ['template', 'recipient'] },
+]
+
 beforeEach(() => {
+  // Stub fetch so the /automations call resolves immediately without MSW
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(MOCK_ACTIONS),
+    }),
+  )
   useWorkflowStore.setState({ nodes: [], edges: [], selectedNodeId: null, version: 0 })
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.useRealTimers()
 })
 
@@ -22,7 +36,8 @@ describe('action selection', () => {
 
     render(<AutomatedNodeForm id={nodeId} data={{ title: '', actionId: '', params: {} }} />)
 
-    await user.selectOptions(screen.getByRole('combobox'), 'send_email')
+    // Select only mounts after /automations fetch resolves
+    await user.selectOptions(await screen.findByRole('combobox'), 'send_email')
 
     expect(screen.getByPlaceholderText('to')).toBeInTheDocument()
     expect(screen.getByPlaceholderText('subject')).toBeInTheDocument()
@@ -34,7 +49,7 @@ describe('action selection', () => {
 
     render(<AutomatedNodeForm id={nodeId} data={{ title: '', actionId: '', params: {} }} />)
 
-    await user.selectOptions(screen.getByRole('combobox'), 'send_email')
+    await user.selectOptions(await screen.findByRole('combobox'), 'send_email')
 
     const data = useWorkflowStore
       .getState()
@@ -69,8 +84,8 @@ describe('stale-param flush on action switch', () => {
       />,
     )
 
-    // Previous action's param inputs should be visible
-    expect(screen.getByPlaceholderText('to')).toBeInTheDocument()
+    // Wait for fetch + currentAction resolution so param inputs appear
+    await screen.findByPlaceholderText('to')
 
     // Switch to Generate Document
     await user.selectOptions(screen.getByRole('combobox'), 'generate_doc')
@@ -88,11 +103,7 @@ describe('stale-param flush on action switch', () => {
     expect(screen.getByPlaceholderText('recipient')).toBeInTheDocument()
   })
 
-  it('cancelled debounce does not overwrite the flush after action switch', () => {
-    // Uses fireEvent (synchronous) instead of userEvent (async Promise-based)
-    // so fake timers do not deadlock waiting for microtask resolution.
-    vi.useFakeTimers()
-
+  it('cancelled debounce does not overwrite the flush after action switch', async () => {
     const nodeId = useWorkflowStore.getState().addNode('automated', { x: 0, y: 0 })
     useWorkflowStore.getState().updateNodeData(nodeId, {
       title: 'My automation',
@@ -107,10 +118,16 @@ describe('stale-param flush on action switch', () => {
       />,
     )
 
-    // Type into 'to' — creates a 300ms pending debounce write to the store
-    fireEvent.change(screen.getByPlaceholderText('to'), { target: { value: 'test@test.com' } })
+    // Wait for fetch to resolve so param inputs are present (real timers)
+    const toInput = await screen.findByPlaceholderText('to')
 
-    // Debounce NOT yet fired — store still has empty params at this point
+    // Install fake timers NOW — only the debounce needs timer control
+    vi.useFakeTimers()
+
+    // Type into 'to' — creates a 300ms pending debounce write to the store
+    fireEvent.change(toInput, { target: { value: 'test@test.com' } })
+
+    // Debounce NOT yet fired — store still has empty params
     let data = useWorkflowStore.getState().nodes.find((n) => n.id === nodeId)
       ?.data as AutomatedNodeData
     expect(data.params).toEqual({})
@@ -118,7 +135,6 @@ describe('stale-param flush on action switch', () => {
     // Switch action — must cancel() the pending debounce, then flush synchronously
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'generate_doc' } })
 
-    // Immediately, store must reflect the new action with clean params
     data = useWorkflowStore.getState().nodes.find((n) => n.id === nodeId)
       ?.data as AutomatedNodeData
     expect(data.actionId).toBe('generate_doc')
