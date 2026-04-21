@@ -7,11 +7,15 @@ import {
 } from '@/store/workflowStore'
 import {
   NODE_TYPE_LABELS,
+  type ApprovalNodeData,
+  type EndNodeData,
   type NodeType,
   type StartNodeData,
   type TaskNodeData,
   type WorkflowNodeData,
 } from '@/types/nodes'
+import { ApprovalNodeForm } from './ApprovalNodeForm'
+import { EndNodeForm } from './EndNodeForm'
 import { StartNodeForm } from './StartNodeForm'
 import { TaskNodeForm } from './TaskNodeForm'
 
@@ -102,8 +106,10 @@ function FormForType({
     case 'task':
       return <TaskNodeForm id={id} data={data as TaskNodeData} />
     case 'approval':
-    case 'automated':
+      return <ApprovalNodeForm id={id} data={data as ApprovalNodeData} />
     case 'end':
+      return <EndNodeForm id={id} data={data as EndNodeData} />
+    case 'automated':
       return (
         <p className="text-xs text-[var(--color-text-muted)]">
           Form coming in a follow-up commit.
