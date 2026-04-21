@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { taskDataSchema, type TaskNodeData } from '@/types/nodes'
 import { useWorkflowStore } from '@/store/workflowStore'
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
-import { TextAreaField, TextField } from './fields'
+import { KeyValueListField, TextAreaField, TextField } from './fields'
 
 type Props = {
   id: string
@@ -27,6 +27,7 @@ type Props = {
 export function TaskNodeForm({ id, data }: Props) {
   const {
     register,
+    control,
     watch,
     formState: { errors },
   } = useForm<TaskNodeData>({
@@ -72,6 +73,12 @@ export function TaskNodeForm({ id, data }: Props) {
         type="date"
         error={errors.dueDate?.message}
         {...register('dueDate')}
+      />
+      <KeyValueListField
+        label="Custom Fields"
+        control={control}
+        register={register}
+        name="customFields"
       />
     </form>
   )

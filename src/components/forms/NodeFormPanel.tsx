@@ -8,9 +8,11 @@ import {
 import {
   NODE_TYPE_LABELS,
   type NodeType,
+  type StartNodeData,
   type TaskNodeData,
   type WorkflowNodeData,
 } from '@/types/nodes'
+import { StartNodeForm } from './StartNodeForm'
 import { TaskNodeForm } from './TaskNodeForm'
 
 /**
@@ -95,9 +97,10 @@ function FormForType({
   data: WorkflowNodeData
 }) {
   switch (type) {
+    case 'start':
+      return <StartNodeForm id={id} data={data as StartNodeData} />
     case 'task':
       return <TaskNodeForm id={id} data={data as TaskNodeData} />
-    case 'start':
     case 'approval':
     case 'automated':
     case 'end':
