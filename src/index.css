@@ -45,3 +45,21 @@ body {
 .react-flow__attribution {
   display: none !important;
 }
+
+/* Handles: keep the visual dot small (8px) but expand the pointer hit
+   area via a transparent ::before pseudo-element. Without this, grabbing
+   a handle to start a connection requires pixel-hunting. The pseudo is
+   transparent — visual size is unchanged; only the hit region grows to
+   roughly 24px. */
+.react-flow__handle {
+  width: 8px;
+  height: 8px;
+}
+
+.react-flow__handle::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border-radius: 9999px;
+}
+
