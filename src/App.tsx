@@ -2,6 +2,7 @@ import { ReactFlowProvider } from '@xyflow/react'
 import { Sidebar } from '@/components/canvas/Sidebar'
 import { WorkflowCanvas } from '@/components/canvas/WorkflowCanvas'
 import { NodeFormPanel } from '@/components/forms/NodeFormPanel'
+import { SandboxPanel } from '@/components/sandbox/SandboxPanel'
 
 export default function App() {
   return (
@@ -10,8 +11,11 @@ export default function App() {
         <aside className="h-full w-60 shrink-0 border-r border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)]">
           <Sidebar />
         </aside>
-        <main className="h-full min-w-0 flex-1">
-          <WorkflowCanvas />
+        <main className="flex h-full min-w-0 flex-1 flex-col">
+          <div className="flex-1 overflow-hidden">
+            <WorkflowCanvas />
+          </div>
+          <SandboxPanel />
         </main>
         <NodeFormPanel />
       </div>
