@@ -8,6 +8,7 @@ import {
 import {
   NODE_TYPE_LABELS,
   type ApprovalNodeData,
+  type AutomatedNodeData,
   type EndNodeData,
   type NodeType,
   type StartNodeData,
@@ -15,6 +16,7 @@ import {
   type WorkflowNodeData,
 } from '@/types/nodes'
 import { ApprovalNodeForm } from './ApprovalNodeForm'
+import { AutomatedNodeForm } from './AutomatedNodeForm'
 import { EndNodeForm } from './EndNodeForm'
 import { StartNodeForm } from './StartNodeForm'
 import { TaskNodeForm } from './TaskNodeForm'
@@ -110,10 +112,6 @@ function FormForType({
     case 'end':
       return <EndNodeForm id={id} data={data as EndNodeData} />
     case 'automated':
-      return (
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Form coming in a follow-up commit.
-        </p>
-      )
+      return <AutomatedNodeForm id={id} data={data as AutomatedNodeData} />
   }
 }
