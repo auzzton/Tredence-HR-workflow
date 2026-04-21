@@ -199,3 +199,25 @@ export const selectNodeById =
   (id: string) =>
   (state: WorkflowStore): WorkflowNode | null =>
     state.nodes.find((n) => n.id === id) ?? null
+
+// Data-only lookup: returns the `data` reference for a node id, never the
+// whole node. Immer preserves `data` across position-only mutations (drags),
+// so a component subscribing via this selector skips re-renders when the
+// selected node is dragged. Returning the full node would tear that
+// property — the node object ref changes on every position tick.
+export const selectNodeDataById =
+  (id: string | null) =>
+  (state: WorkflowStore): WorkflowNode['data'] | null => {
+    if (!id) return null
+    return state.nodes.find((n) => n.id === id)?.data ?? null
+  }
+
+// Type-only lookup: the literal discriminator is immutable for a node's
+// lifetime, so this returns a stable string that never forces a re-render
+// unless the selected node changes or its type changes (which it doesn't).
+export const selectNodeTypeById =
+  (id: string | null) =>
+  (state: WorkflowStore): NodeType | null => {
+    if (!id) return null
+    return state.nodes.find((n) => n.id === id)?.type ?? null
+  }
