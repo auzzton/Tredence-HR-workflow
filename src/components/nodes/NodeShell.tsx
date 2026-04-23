@@ -44,30 +44,32 @@ export function NodeShell({ type, title, subtitle, selected, hasError, handles }
   const ringStyle = !hasError && selected ? { boxShadow: `0 0 0 2px ${accent}` } : undefined
 
   return (
-    <div
-      className={`relative flex min-w-[180px] items-stretch overflow-hidden rounded-[var(--radius-node)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] shadow-sm ${ringClass}`}
-      style={ringStyle}
-    >
+    <div className="relative min-w-[180px]">
       {showTarget ? (
         <Handle type="target" position={Position.Left} style={{ background: accent }} />
       ) : null}
 
-      <div className="w-1 shrink-0" style={{ background: accent }} />
+      <div
+        className={`flex items-stretch overflow-hidden rounded-[var(--radius-node)] border border-[var(--color-border-subtle)] bg-[var(--color-surface-raised)] shadow-sm ${ringClass}`}
+        style={ringStyle}
+      >
+        <div className="w-1 shrink-0" style={{ background: accent }} />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 px-3 py-2">
-        <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
-          {title}
-        </span>
-        {subtitle != null ? (
-          <span className="truncate text-[12px] text-[var(--color-text-secondary)]">
-            {subtitle}
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 px-3 py-2">
+          <span className="truncate text-sm font-medium text-[var(--color-text-primary)]">
+            {title}
           </span>
+          {subtitle != null ? (
+            <span className="truncate text-[12px] text-[var(--color-text-secondary)]">
+              {subtitle}
+            </span>
+          ) : null}
+        </div>
+
+        {hasError ? (
+          <AlertCircle className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-[var(--color-danger)]" />
         ) : null}
       </div>
-
-      {hasError ? (
-        <AlertCircle className="absolute right-1.5 top-1.5 h-3.5 w-3.5 text-[var(--color-danger)]" />
-      ) : null}
 
       {showSource ? (
         <Handle type="source" position={Position.Right} style={{ background: accent }} />
