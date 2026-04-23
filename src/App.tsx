@@ -12,7 +12,7 @@ export default function App() {
           <Sidebar />
         </aside>
         <main className="flex h-full min-w-0 flex-1 flex-col">
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0">
             <WorkflowCanvas />
           </div>
           <SandboxPanel />
