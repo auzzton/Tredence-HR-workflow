@@ -7,6 +7,7 @@ import type { AutomationAction } from '@/types/workflow'
 import { useWorkflowStore } from '@/store/workflowStore'
 import { useDebouncedCallback } from '@/hooks/useDebouncedCallback'
 import { apiGet } from '@/api/client'
+import { FALLBACK_ACTIONS } from '@/lib/fallbackActions'
 import { SelectField, TextField } from './fields'
 
 type Props = {
@@ -27,7 +28,9 @@ export function AutomatedNodeForm({ id, data }: Props) {
       })
       .catch((err: unknown) => {
         if (err instanceof Error && err.name === 'AbortError') return
-        setFetchStatus('error')
+        console.warn('API unavailable, using fallback actions')
+        setActions(FALLBACK_ACTIONS)
+        setFetchStatus('ready')
       })
     return () => controller.abort()
   }, [])

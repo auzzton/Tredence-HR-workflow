@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { ChevronDown, ChevronUp, Play } from 'lucide-react'
 import { apiPost } from '@/api/client'
+import { runSimulation } from '@/lib/simulate'
 import { validateGraph } from '@/lib/graphValidation'
 import {
   selectEdges,
@@ -28,7 +29,7 @@ export function SandboxPanel() {
   // Cached result is only valid for the current graph version
   const cachedResult = simCache?.version === version ? simCache.result : null
 
-  async function runSimulation() {
+  async function handleRunSimulation() {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -46,7 +47,9 @@ export function SandboxPanel() {
       }
     } catch (err: unknown) {
       if (err instanceof Error && err.name === 'AbortError') return
-      setSimStatus('error')
+      const result = runSimulation(graph)
+      setSimCache({ version, result })
+      setSimStatus('idle')
     }
   }
 
@@ -87,7 +90,7 @@ export function SandboxPanel() {
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={runSimulation}
+                  onClick={handleRunSimulation}
                   disabled={simStatus === 'running'}
                   className="flex items-center gap-1.5 rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"
                 >
