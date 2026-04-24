@@ -2,7 +2,7 @@
 
 <!-- SCREENSHOT_PLACEHOLDER — I'll add screenshot.png after deploy -->
 
-**Live Demo:** VERCEL_URL_PLACEHOLDER — I'll add after deploy
+**Live Demo:** (https://tredence-hr-workflow-kappa.vercel.app/)
 
 ## Overview
 
