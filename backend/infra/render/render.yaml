@@ -1,0 +1,69 @@
+# Render Blueprint for tredence-backend
+# ---------------------------------------------------------------------------
+# HOW TO USE
+# Place (or symlink) this file at the repo root before connecting Render.
+# Render auto-discovers "render.yaml" only at the root of the repository.
+#
+#   cp infra/render/render.yaml render.yaml
+#   git add render.yaml && git commit -m "chore: add render.yaml at root"
+#
+# Then go to dashboard.render.com → New → Blueprint and select this repo.
+# See infra/render/README.md for the full deployment walkthrough.
+# ---------------------------------------------------------------------------
+
+services:
+  - type: web
+    name: tredence-backend
+    runtime: image
+    image:
+      # Update this URL after your first `git push` triggers the deploy workflow
+      # and the ghcr.io package is created.
+      # Format: ghcr.io/GITHUB_USERNAME/REPO_NAME:latest
+      # Example: ghcr.io/auzzton/tredence-backend:latest
+      url: ghcr.io/YOUR_GITHUB_USERNAME/tredence-backend:latest
+
+    plan: free
+    region: oregon
+
+    # Render pings /health to decide whether a deploy succeeded.
+    # Our endpoint does SELECT 1 against the DB — returns 503 if DB is down,
+    # which causes Render to roll back the deployment automatically.
+    healthCheckPath: /health
+
+    # Render pulls a new image only when explicitly triggered (deploy hook).
+    # Auto-deploy from git is disabled because the image is external.
+    autoDeploy: false
+
+    envVars:
+      # -----------------------------------------------------------------------
+      # Secrets — set these manually in:
+      # Render Dashboard → your service → Environment → Add Environment Variable
+      # Never commit real values here.
+      # -----------------------------------------------------------------------
+
+      - key: DATABASE_URL
+        sync: false
+        # Neon POOLED connection string (for the app at runtime).
+        # Format: postgresql+asyncpg://USER:PASS@HOST-pooler.REGION.aws.neon.tech/DBNAME?sslmode=require
+
+      - key: ALEMBIC_DATABASE_URL
+        sync: false
+        # Neon DIRECT (non-pooled) connection string (for migrations only).
+        # Format: postgresql+asyncpg://USER:PASS@HOST.REGION.aws.neon.tech/DBNAME?sslmode=require
+        # Why separate: Neon's pgbouncer proxy can't run DDL migrations in
+        # transaction mode. The direct URL bypasses the proxy.
+
+      - key: CORS_ORIGINS
+        sync: false
+        # Comma-separated list of allowed frontend origins.
+        # Example: https://your-app.onrender.com,https://yourname.github.io
+
+      # -----------------------------------------------------------------------
+      # Static values — safe to commit
+      # -----------------------------------------------------------------------
+
+      - key: ENV
+        value: prod
+
+      - key: LOG_LEVEL
+        value: INFO

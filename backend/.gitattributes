@@ -1,0 +1,12 @@
+# Normalize line endings: store LF in the repo, let git convert on checkout.
+# This prevents Windows CRLF from breaking the bash entrypoint script inside
+# the Linux Docker container.
+* text=auto
+
+# Shell scripts must always be LF — CRLF breaks bash even on Windows WSL.
+*.sh text eol=lf
+
+# Mako templates and YAML also benefit from consistent LF.
+*.mako text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
