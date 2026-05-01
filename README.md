@@ -2,7 +2,7 @@
 
 <!-- SCREENSHOT_PLACEHOLDER — I'll add screenshot.png after deploy -->
 
-**Live Demo:** (https://tredence-hr-workflow-kappa.vercel.app/)
+**Live Demo (deployment using vercel link:** (https://tredence-hr-workflow-kappa.vercel.app/)
 
 ## Overview
 
